@@ -1,4 +1,4 @@
-# NullPointer - The OG Game - Dark Cyberpunk 3D RPG
+# NullPointer - The OG Game 
 
 **A 3D Dark Cyberpunk RPG coded in Python + Ursina Engine**
 *Optimized for Linux (tested on Intel i3 / HD 520, 4GB RAM)*
@@ -25,8 +25,8 @@ The game features:
 
 1. **Clone the repository** (or download the ZIP):
    ```bash
-   git clone https://github.com/your-username/The-Codebase-Legacy-of-the-Root.git
-   cd The-Codebase-Legacy-of-the-Root
+   git clone https://github.com/Theogabhishek/Null-Pointer.git
+   cd Null-Pointer
    ```
 
 2. **Make the launch script executable**:
