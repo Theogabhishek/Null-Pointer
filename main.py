@@ -16,11 +16,11 @@ window.fps_counter.enabled = True
 window.exit_button.visible = True
 
 # === RETRO CYBERPUNK COLOR PALETTE ===
-neon_cyan = color.rgb(0, 0.9, 1.0)
-neon_purple = color.rgb(0.6, 0, 1.0)
-neon_green = color.rgb(0, 1.0, 0.4)
-neon_red = color.rgb(1.0, 0.1, 0.3)
-neon_gold = color.rgb(1.0, 0.8, 0.0)
+neon_cyan = color.rgb(0, 230, 255)
+neon_purple = color.rgb(153, 0, 255)
+neon_green = color.rgb(0, 255, 100)
+neon_red = color.rgb(255, 25, 75)
+neon_gold = color.rgb(255, 204, 0)
 dark_bg = color.rgb(10, 11, 20)
 dark_panel = color.rgba(15, 17, 28, 200)
 
@@ -76,7 +76,10 @@ class DebuggerStaff(Entity):
     def update(self):
         # Rotate ring
         self.ring.rotation_y += time.dt * 60
-        self.ring.y = math.sin(time.time() * 3) * 0.05
+        try:
+            self.ring.y = math.sin(time.time() * 3) * 0.05
+        except Exception:
+            pass
         # Recoil reset
         if self.recoil > 0:
             self.recoil -= time.dt * 4
@@ -95,14 +98,13 @@ class BinarySky:
             x = random.uniform(-100, 100)
             y = random.uniform(30, 80)
             z = random.uniform(-100, 100)
-            text_str = "".join(random.choice(["0", "1"]) for _ in range(4))
+            # We remove passing `text=` into Entity (unsupported) and use a subtle quad as a visual
             e = Entity(
                 model='quad',
-                text=text_str,
                 color=color.rgba(0, 120, 80, 15),
                 scale=random.uniform(0.5, 2),
                 position=(x, y, z),
-                rotation=random.uniform(0, 360),
+                rotation=(0, random.uniform(0, 360), 0),
             )
             self.particles.append(e)
 
@@ -158,14 +160,14 @@ class CyberHUD:
         self.task_border = Entity(parent=camera.ui, model='quad', scale=(1.0, 0.15), position=(0, -0.46), color=neon_cyan, mode='line')
 
         # Objective text
-        self.task_text = Text(text="MISSION: Talk to GCC Monolith (F) to start", position=(0, -0.44), color=neon_green, scale=1.2, parent=camera.ui, halma='center')
+        self.task_text = Text(text="MISSION: Talk to GCC Monolith (F) to start", position=(0, -0.44), color=neon_green, scale=1.2, parent=camera.ui, origin=(0,0))
 
         # Controls help strip
         self.controls_bg = Entity(parent=camera.ui, model='quad', scale=(1.0, 0.1), position=(0, -0.58), color=dark_panel)
         self.controls_border = Entity(parent=camera.ui, model='quad', scale=(1.0, 0.1), position=(0, -0.58), color=neon_purple, mode='line')
 
         controls_text = "CONTROLS: WASD=Move  Space=Jump  Left Click=Ping  Q=Sudo Kill  E=Git Stash  R=Refactor  F=Interact  Esc=Exit"
-        self.controls_text = Text(text=controls_text, position=(0, -0.56), color=color.gray, scale=0.9, parent=camera.ui, halma='center')
+        self.controls_text = Text(text=controls_text, position=(0, -0.56), color=color.gray, scale=0.9, parent=camera.ui, origin=(0,0))
 
         # Console box
         self.console_bg = Entity(parent=camera.ui, model='quad', scale=(0.45, 0.25), position=(-0.6, -0.35), color=dark_panel)
@@ -222,7 +224,8 @@ class CyberHUD:
 
     def update_terminal(self):
         for idx, line in enumerate(self.logs):
-            self.log_texts[idx].text = line
+            if idx < len(self.log_texts):
+                self.log_texts[idx].text = line
 
     def log(self, message):
         self.logs.append(message)
@@ -326,23 +329,23 @@ class PingProjectile(Entity):
 # === SUDO SHOCKWAVE ===
 class Shockwave(Entity):
     def __init__(self, position):
+        # Use cube as a safe fallback for a ring-like shockwave
         super().__init__(
-            model='cylinder',  # Will use scaled cube as fallback
+            model='cube',
             color=neon_green,
             position=position,
             scale=(0.1, 0.05, 0.1),
             mode='line'
         )
-        # Fallback: if cylinder model missing, use scaled cube
-        if not hasattr(self, 'model_name') or self.model is None:
-            self.model = 'cube'
-            self.scale = (0.1, 0.05, 0.1)
 
     def update(self):
         self.scale_x += 25 * time.dt
         self.scale_z += 25 * time.dt
         alpha = int(255 * (1.0 - min(self.scale_x / 20, 1.0)))
-        self.color = color.rgba(0, 255, 100, alpha)
+        try:
+            self.color = color.rgba(0, 255, 100, alpha)
+        except Exception:
+            self.color = neon_green
         if self.scale_x >= 20:
             destroy(self)
 
@@ -358,10 +361,10 @@ class SyntaxGlitch(Entity):
             collider='box'
         )
         # Core eye
-        Entity(parent=self, model='sphere', color=neon_red, scale=(0.5, 0.5, 0.5), position=(0, 0, 0.5))
+        self.core = Entity(parent=self, model='sphere', color=neon_red, scale=(0.5, 0.5, 0.5), position=(0, 0, 0.5))
         # Wings
-        Entity(parent=self, model='cube', color=neon_purple, scale=(1.1, 0.1, 0.4), position=(-0.8, 0, 0))
-        Entity(parent=self, model='cube', color=neon_purple, scale=(1.1, 0.1, 0.4), position=(0.8, 0, 0))
+        self.wing_l = Entity(parent=self, model='cube', color=neon_purple, scale=(1.1, 0.1, 0.4), position=(-0.8, 0, 0))
+        self.wing_r = Entity(parent=self, model='cube', color=neon_purple, scale=(1.1, 0.1, 0.4), position=(0.8, 0, 0))
         self.health = 2.0
         self.speed = random.uniform(3.0, 5.0)
         self.bob_speed = random.uniform(2.0, 4.0)
@@ -369,15 +372,20 @@ class SyntaxGlitch(Entity):
 
     def update(self):
         # Chase player
-        self.look_at(player)
-        self.rotation_y += 180
-        dir_to_player = (player.position - self.position).normalized()
-        self.position += dir_to_player * self.speed * time.dt
+        # Use look_at without flipping
+        try:
+            self.look_at(player.position)
+        except Exception:
+            pass
+        dir_to_player = (player.position - self.position)
+        if dir_to_player.length() != 0:
+            dir_to_player = dir_to_player.normalized()
+            self.position += dir_to_player * self.speed * time.dt
         # Float/bob
         self.y += math.sin(time.time() * self.bob_speed + self.bob_offset) * 0.02
         # Wings flap
-        self.children[0].rotation_z = math.sin(time.time() * 15) * 30
-        self.children[1].rotation_z = -math.sin(time.time() * 15) * 30
+        self.wing_l.rotation_z = math.sin(time.time() * 15) * 30
+        self.wing_r.rotation_z = -math.sin(time.time() * 15) * 30
         # Damage on contact
         if distance(self.position, player.position) < 2.0:
             self.attack_player()
@@ -427,11 +435,11 @@ class GCCMonolith(Entity):
             position=(0, 2.5, 15),
             collider='box'
         )
-        # Halo ring (use torus, but fallback to cube if missing - though torus isn't built-in, we fake it)
-        # Actually, let's just use a cube scaled as a ring illusion, or skip the torus
+        # Halo ring (approximated)
         self.halo = Entity(parent=self, model='cube', color=neon_green,
                            scale=(1.5, 0.2, 1.5), position=(0, 3.0, 0))
         self.rotation_speed = random.uniform(10, 20)
+        self._last_proximity_log = 0.0
 
     def update(self):
         self.rotation_y += time.dt * self.rotation_speed
@@ -440,7 +448,10 @@ class GCCMonolith(Entity):
         dist = distance(self.position, player.position)
         if dist < 8.0:
             self.halo.color = neon_cyan
-            hud.log("[network] Press [F] to speak with GCC")
+            # Throttle logging to avoid spam
+            if time.time() - self._last_proximity_log > 1.5:
+                hud.log("[network] Press [F] to speak with GCC")
+                self._last_proximity_log = time.time()
         else:
             self.halo.color = neon_green
 
@@ -509,7 +520,7 @@ def input(key):
             Shockwave(player.position)
             hud.log("[sudo] Purge wave activated!")
             # Damage nearby glitches
-            for e in active_enemies:
+            for e in list(active_enemies):
                 if distance(e.position, player.position) <= 12:
                     e.damage(3.0)
         else:
@@ -570,7 +581,7 @@ def input(key):
 
 # === UPDATE LOOP ===
 def update():
-    application.target_fps = TARGET_FPS
+    app.target_fps = TARGET_FPS
 
     # Update task/goal display
     if not GameState.quest_active:
@@ -586,10 +597,10 @@ def update():
     if GameState.cpu_energy < 100:
         GameState.cpu_energy = min(100, GameState.cpu_energy + time.dt * 10)
 
-    # Cooldowns
-    for c in [GameState.cooldown_sudo, GameState.cooldown_stash, GameState.cooldown_refactor]:
-        if c > 0:
-            pass  # simplified for performance
+    # Cooldowns - decrement properly
+    GameState.cooldown_sudo = max(0.0, GameState.cooldown_sudo - time.dt)
+    GameState.cooldown_stash = max(0.0, GameState.cooldown_stash - time.dt)
+    GameState.cooldown_refactor = max(0.0, GameState.cooldown_refactor - time.dt)
 
     # HUD updates
     hud.update_stats()
@@ -604,10 +615,10 @@ def update():
 # === LAUNCH BANNER ===
 if __name__ == '__main__':
     print("""
- ▄▄▄▄·  ▄▄▄·  ▄▄▄· ▪   ▄▄▄·  ▄▄▄· • ▌ • ▄▄▄▄▪   ·▄▄▄▄  ▄▄▄·▄▄▄▄▄▄▄▄·▄.▄▄▄▄▄▄▄▄▌ ▄▄·  ▄▄▄·▪ 
-·██  ·· •██ █•█▌·██  ██ ▐█.▌▐█ ▄█ ██ ██▪▐█ ▀█  ██▪ ██ ▐█ ▄██▪ ██▐▌▐█ ▌▐▌▐█ ▌▐▌▐█ ▀█ •█▌▐██·
-▐█.▪ ▐▌▐█·▐█·█▌▐█· ▐█· ▐█▌·▐█▀▐█ ██· ▐█·▐█▀▐█ ▄▀▐█·▐█▌ ▐█▐▌▐█· ▐█▌▐▌ ▐█▌▐█ █▌▐█▀▀█  ▐█·▐█▌
- ▀▀▀  ▀█▀ ·▀▀▀  ▀▀▀  ▀█▄▐▀▀▀· ▀▀▀ · ▀▀▀ █▪ ▀▀▀  ▀▀▀ ▀▀▀.▀▀▀ ·▀▀ █▪ ▀  █▪ ▀▀▀·  ▀▀▀  ▀▀▀ 
+ ▄▄▄▄·  ▄▄▄·  ▄▄▄· ▪   ▄▄▄·  ▄▄▄· • ▌ • ▄▄▄▄▪   ·▄▄▄▄  ▄▄▄·▄▄▄▄▄▄▄▄·▄.▄▄▄▄▄▄▄▄▌ ▄▄
+·██  ·· •██ █•█▌·██  ██ ▐█.▌▐█ ▄█ ██ ██▪▐█ ▀█  ██▪ ██ ▐█ ▄██▪ ██▐▌▐█ ▌▐▌▐█ ▌▐▌
+▐█.▪ ▐▌▐█·▐█·█▌▐█· ▐█· ▐█▌·▐█▀▐█ ██· ▐█·▐█▀▐█ ▄▀▐█·▐█▌ ▐█▐▌▐█· ▐█▌▐▌ ▐█▌▐█
+ ▀▀▀  ▀█▀ ·▀▀▀  ▀▀▀  ▀█▄▐▀▀▀· ▀▀▀ · ▀▀▀ █▪ ▀▀▀  ▀▀▀ ▀▀▀.▀▀▀ ·▀▀ █▪ ▀  █▪ ▀▀▀·  ▀▀▀
     """)
     print("NullPointer - The OG Game")
     print("Made by Theogabhishek with 3 cups of coffee & AI assistance")
