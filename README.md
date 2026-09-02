@@ -141,4 +141,4 @@ Please fork the repo, create a branch, and submit a pull request. For issues, us
 **Enjoy the game, and may your code compile on the first try!**
 
 ---
-*Built with ❤️ by Theogabhishek — 3 cups of coffee + AI assistance · GitHub: https://github.com/your-username/NullPointer-The-OG-Game*
+*Built with ❤️ by Theogabhishek — 3 cups of coffee + AI assistance · GitHub: [https://github.com/Theogabhishek/NullPointer] (https://github.com/Theogabhishek/Null-Pointer)*
